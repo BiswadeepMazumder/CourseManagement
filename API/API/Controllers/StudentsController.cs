@@ -14,84 +14,99 @@ using RouteAttribute = Microsoft.AspNetCore.Mvc.RouteAttribute;
 
 namespace API.Controllers
 {
-
-[Route("api/[controller]")]
-[ApiController]
-public class StudentsController : ControllerBase
-{
-    private readonly StudentManagementDbContext _context;
-
-    public StudentsController(StudentManagementDbContext context)
+    // Controller to manage student-related actions, such as viewing student information and logging in
+    [Route("api/[controller]")]
+    [ApiController]
+    public class StudentsController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly StudentManagementDbContext _context;
 
-    [HttpGet("ShowAllStudents")]
-    public ActionResult<IEnumerable<StudentDTO>> ShowAllStudents()
-    {
-        var students = _context.Users
-            .Where(u => u.UserType == 2)  // Assuming 2 represents students
-            .Select(u => new StudentDTO(u.FirstName, u.LastName, u.Email, u.EnrollmentDate,u.UserId))
-            .ToList();
-
-        if (students == null || !students.Any())
+        // Constructor to inject the StudentManagementDbContext for database operations
+        public StudentsController(StudentManagementDbContext context)
         {
-            return NotFound("No students found.");
+            _context = context;
         }
 
-        return Ok(students);
-    }
-
-    [HttpGet("ShowStudentByID/{id}")]
-    public ActionResult<StudentDTO> ShowStudentByID(int id)
-    {
-        var student = _context.Users
-            .Where(u => u.UserId == id && u.UserType == 2)  // Check for student with matching ID
-            .Select(u => new StudentDTO(u.FirstName, u.LastName, u.Email, u.EnrollmentDate,u.UserId))
-            .FirstOrDefault();
-
-        if (student == null)
+        // Endpoint to retrieve a list of all students
+        // GET: api/Students/ShowAllStudents
+        [HttpGet("ShowAllStudents")]
+        public ActionResult<IEnumerable<StudentDTO>> ShowAllStudents()
         {
-            return NotFound($"Student with ID {id} not found.");
+            // Query Users table for users with UserType == 2 (assuming 2 represents students)
+            var students = _context.Users
+                .Where(u => u.UserType == 2)
+                .Select(u => new StudentDTO(u.FirstName, u.LastName, u.Email, u.EnrollmentDate, u.UserId))
+                .ToList();
+
+            // Check if no students are found, returning a 404 Not Found response if the list is empty
+            if (students == null || !students.Any())
+            {
+                return NotFound("No students found.");
+            }
+
+            // Return the list of students in an HTTP 200 OK response
+            return Ok(students);
         }
 
-        return Ok(student);
-    }
-
-    [HttpPost("Login")]
-    public IActionResult Login([FromBody] LoginDTO loginDTO)
-    {
-        if (loginDTO == null || string.IsNullOrEmpty(loginDTO.Email) || string.IsNullOrEmpty(loginDTO.Password))
+        // Endpoint to retrieve a specific student by ID
+        // GET: api/Students/ShowStudentByID/{id}
+        [HttpGet("ShowStudentByID/{id}")]
+        public ActionResult<StudentDTO> ShowStudentByID(int id)
         {
-            return BadRequest("Invalid login data.");
+            // Query for a specific student by UserId and UserType (2 for student)
+            var student = _context.Users
+                .Where(u => u.UserId == id && u.UserType == 2)
+                .Select(u => new StudentDTO(u.FirstName, u.LastName, u.Email, u.EnrollmentDate, u.UserId))
+                .FirstOrDefault();
+
+            // Return a 404 Not Found response if the student is not found
+            if (student == null)
+            {
+                return NotFound($"Student with ID {id} not found.");
+            }
+
+            // Return the student details in an HTTP 200 OK response
+            return Ok(student);
         }
 
-        var user = _context.Users
-            .FirstOrDefault(u => u.Email == loginDTO.Email && u.Password == loginDTO.Password);
-
-        if (user == null)
+        // Endpoint to handle student login
+        // POST: api/Students/Login
+        [HttpPost("Login")]
+        public IActionResult Login([FromBody] LoginDTO loginDTO)
         {
-            return Unauthorized("Invalid email or password.");
+            // Check if login data is missing or incomplete, returning a 400 Bad Request response if so
+            if (loginDTO == null || string.IsNullOrEmpty(loginDTO.Email) || string.IsNullOrEmpty(loginDTO.Password))
+            {
+                return BadRequest("Invalid login data.");
+            }
+
+            // Attempt to find a user with the provided email and password
+            var user = _context.Users
+                .FirstOrDefault(u => u.Email == loginDTO.Email && u.Password == loginDTO.Password);
+
+            // If the user is not found, return a 401 Unauthorized response indicating invalid credentials
+            if (user == null)
+            {
+                return Unauthorized("Invalid email or password.");
+            }
+
+            // Return a success response with user details (in a real app, return a token or session)
+            return Ok(new 
+            { 
+                StatusCode = 200,                         // Explicitly setting a success status code
+                FullName = $"{user.FirstName} {user.LastName}", // Full name of the user
+                UserType = user.UserType,                 // Type of user (e.g., student, admin)
+                UserId = user.UserId                      // Unique user ID
+            });
         }
 
-        // In a real application, you would return a token or session information.
-        //return Ok($"Welcome {user.FirstName} {user.LastName}, {user.UserType}");
-        //return Ok(new { UserType = user.UserType });
-        return Ok(new 
-    { 
-        StatusCode = 200, // Explicitly return status code
-        FullName = $"{user.FirstName} {user.LastName}",  // Concatenate first name and last name
-        UserType = user.UserType,  // Return the user type
-        UserId = user.UserId       // Return the user ID
-    });
+        // Endpoint to handle student logout
+        // POST: api/Students/Logout
+        [HttpPost("Logout")]
+        public IActionResult Logout()
+        {
+            // Here, token invalidation or session cleanup would occur in a real application
+            return Ok("Logout successful.");
+        }
     }
-        
-    [HttpPost("Logout")]
-    public IActionResult Logout()
-    {
-        // In a real scenario, you might invalidate a token or session here.
-        return Ok();
-    }
- }
-
 }

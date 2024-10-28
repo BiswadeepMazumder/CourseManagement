@@ -163,3 +163,5 @@ yarn-error.log*
 
 # Optional: Ignore database-specific files (adjust to your setup)
 *.db
+
+.fake
