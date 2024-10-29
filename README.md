@@ -17,7 +17,7 @@ Compiles the project file and makes the corespondent DLL files.
 ### `dotnet watch run`
 
 Launches the test runner in the watch mode.\
-Open [http://localhost:3000](http://localhost:5000/swagger/index.html) to view it in the browser.
+Open [http://localhost:5000](http://localhost:5000/swagger/index.html) to view it in the browser.
 
 dotnet watch run enables hot reload
 
